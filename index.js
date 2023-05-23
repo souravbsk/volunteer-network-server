@@ -21,6 +21,9 @@ const client = new MongoClient(uri, {
     strict: true,
     deprecationErrors: true,
 },
+useNewUrlParser:true,
+useUnifiedTopology:true,
+maxPoolSize:10,
 });
 
 
@@ -48,7 +51,12 @@ const verifyJWT = (req,res,next) => {
 async function run() {
   try {
     // Connect the client to the server	(optional starting in v4.7)
-    await client.connect();
+  //   await client.connect((err) => {
+  //     if(err){
+  //         console.log(err);
+  //         return
+  //     }
+  // });
     // Send a ping to confirm a successful connection
     const eventsCollection = client.db("volunteerDB").collection("events");
     const eventBook = client.db("volunteerDB").collection("eventBook");
@@ -75,6 +83,8 @@ async function run() {
       res.send(result);
     });
 
+
+
     //get single event
     app.get("/events/:id", async (req, res) => {
       const id = req.params.id;
@@ -86,11 +96,32 @@ async function run() {
     // search value
     app.get("/search/:text", async (req, res) => {
       const text = req.params.text;
+      if(text){
+        const query = { title: { $regex: text, $options: "i" } };
+        const result = await eventsCollection.find(query).toArray();
+        res.send(result)
+      }
+      else{
+        const result = await eventsCollection.find({}).toArray();
+        res.send(result)
+
+      }
       console.log(text);
-      const query = { title: { $regex: text, $options: "i" } };
-      const result = await eventsCollection.find(query).toArray();
-      res.send(result)
+      
     });
+
+
+
+
+    app.get("/search", async (req, res) => {
+     
+        const result = await eventsCollection.find({}).toArray();
+        res.send(result)
+
+    
+      
+    });
+
 
     // eventBooking
     app.post("/eventsBook", async (req, res) => {
